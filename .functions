@@ -91,7 +91,14 @@ function o() {
 	fi;
 }
 
+function change_extension() {
+	for f in *.$1
+	do
+		[ -f "$f" ] && mv -v "$f" "${f%$1}$2"
+	done
+}
 
+###################### DOCKER FUNCTIONS BELOW ######################
 function docker_stop_containers {
     CONTAINERS=`docker ps -a -q`
     [ -n "$CONTAINERS" ] && docker stop $CONTAINERS    
