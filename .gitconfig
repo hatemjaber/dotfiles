@@ -188,6 +188,5 @@
 [url "git://gist.github.com/"]
 
 	insteadOf = "gist:"
-[user]
-	name = Hatem Jaber
-	email = hatem@7079.net
+[init]
+	defaultBranch = main
