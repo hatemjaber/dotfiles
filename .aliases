@@ -77,3 +77,6 @@ alias tpr="tput reset"
 
 # Print each PATH entry on a separate line
 alias path='echo -e ${PATH//:/\\n}'
+
+# vscode flatpak alias
+alias code="flatpak run com.visualstudio.code"
