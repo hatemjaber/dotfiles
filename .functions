@@ -147,7 +147,7 @@ docker_run() {
     docker run --restart=on-failure -p "127.0.0.1:$PORT:$PORT" --name "$CONTAINER" -d "$IMAGE"
 }
 
-docker_update {
+docker_update() {
     IMAGE=${1?Need an image name}
     CONTAINER=${2?Need a container name}
     PORT=${3?Need a port}
