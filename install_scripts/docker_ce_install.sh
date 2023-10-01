@@ -27,5 +27,12 @@ fi
 # Install Docker components
 apt install docker-ce docker-ce-cli containerd.io docker-compose-plugin -y
 
+# Add the user to the docker group (creating the group if it doesn't exist)
+if [ ! $(getent group docker) ]; then
+    groupadd docker
+fi
+usermod -aG docker $USER
+
 echo "Installation completed!"
+echo "For the group changes to take effect, you might
 
