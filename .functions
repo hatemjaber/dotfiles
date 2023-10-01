@@ -1,12 +1,37 @@
 #!/usr/bin/env bash
 
+# -----------------------------
+# General Utility Functions
+# -----------------------------
+
 # Create a new directory and enter it
-function mkd() {
+mkd() {
 	mkdir -p "$@" && cd "$_";
 }
 
+
+# Compare original and gzipped file size
+gz() {
+    local origsize=$(wc -c < "$1")
+    local gzipsize=$(gzip -c "$1" | wc -c)
+    local ratio=$(echo "$gzipsize * 100 / $origsize" | bc -l)
+    printf "orig: %d bytes\n" "$origsize"
+    printf "gzip: %d bytes (%2.2f%%)\n" "$gzipsize" "$ratio"
+}
+
+# Change file extensions
+change_extension() {
+    for f in *.$1; do
+        [ -f "$f" ] && mv -v "$f" "${f%$1}$2"
+    done
+}
+
+# -----------------------------
+# Archive Utility Functions
+# -----------------------------
+
 # Create a .tar.gz archive, using `zopfli`, `pigz` or `gzip` for compression
-function targz() {
+targz() {
 	local tmpFile="${@%/}.tar";
 	tar -cvf "${tmpFile}" --exclude=".DS_Store" "${@}" || return 1;
 
@@ -39,12 +64,16 @@ function targz() {
 	echo "${tmpFile}.gz ($((zippedSize / 1000)) kB) created successfully.";
 }
 
+# -----------------------------
+# File System Utility Functions
+# -----------------------------
+
+
 # Determine size of a file or total size of a directory
-function fs() {
+fs() {
+    local arg=-sh;
 	if du -b /dev/null > /dev/null 2>&1; then
 		local arg=-sbh;
-	else
-		local arg=-sh;
 	fi
 	if [[ -n "$@" ]]; then
 		du $arg -- "$@";
@@ -53,25 +82,23 @@ function fs() {
 	fi;
 }
 
-# Use Git’s colored diff when available
-hash git &>/dev/null;
-if [ $? -eq 0 ]; then
-	function diff() {
-		git diff --no-index --color-words "$@";
-	}
-fi;
+# -----------------------------
+# Git Utility Functions
+# -----------------------------
 
-# Compare original and gzipped file size
-function gz() {
-	local origsize=$(wc -c < "$1");
-	local gzipsize=$(gzip -c "$1" | wc -c);
-	local ratio=$(echo "$gzipsize * 100 / $origsize" | bc -l);
-	printf "orig: %d bytes\n" "$origsize";
-	printf "gzip: %d bytes (%2.2f%%)\n" "$gzipsize" "$ratio";
-}
+if hash git &>/dev/null; then
+    # Use Git’s colored diff when available
+    diff() {
+        git diff --no-index --color-words "$@"
+    }
+fi
+
+# -----------------------------
+# Open Function (Cross-platform)
+# -----------------------------
 
 # Normalize `open` across Linux, macOS, and Windows.
-# This is needed to make the `o` function (see below) cross-platform.
+# This is needed to make the `o` (see below) cross-platform.
 if [ ! $(uname -s) = 'Darwin' ]; then
 	if grep -q Microsoft /proc/version; then
 		# Ubuntu on Windows using the Linux subsystem
@@ -83,7 +110,7 @@ fi
 
 # `o` with no arguments opens the current directory, otherwise opens the given
 # location
-function o() {
+o() {
 	if [ $# -eq 0 ]; then
 		open .;
 	else
@@ -91,47 +118,36 @@ function o() {
 	fi;
 }
 
-function change_extension() {
-	for f in *.$1
-	do
-		[ -f "$f" ] && mv -v "$f" "${f%$1}$2"
-	done
+# -----------------------------
+# Docker Utility Functions
+# -----------------------------
+
+docker_stop_containers() {
+    docker stop $(docker ps -a -q) 2>/dev/null
 }
 
-###################### DOCKER FUNCTIONS BELOW ######################
-function docker_stop_containers {
-    CONTAINERS=`docker ps -a -q`
-    [ -n "$CONTAINERS" ] && docker stop $CONTAINERS    
+docker_rm_containers() {
+    docker rm -f -v $(docker ps -a -q) 2>/dev/null
 }
 
-function docker_rm_containers {
-    CONTAINERS=`docker ps -a -q`
-    [ -n "$CONTAINERS" ] && docker rm -f -v $CONTAINERS
-
-}
-function docker_rmi_images {
-    IMAGES=`docker images -q`
-    [ -n "$IMAGES" ] && docker rmi -f $IMAGES
+docker_rmi_images() {
+    docker rmi -f $(docker images -q) 2>/dev/null
 }
 
-function docker_build {
-    TAG=${1?Need a value}
-    IMAGE=${2?Need an image name}
-    cd pwd
-    docker build -t $IMAGE:$TAG -t $IMAGE:latest .
+docker_build() {
+    local TAG=${1?"Error: A tag value is required"}
+    local IMAGE=${2?"Error: An image name is required"}
+    docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
 }
 
-function docker_run {
-    IMAGE=${1?Need an image name}
-    CONTAINER=${2?Need a container name}
-    PORT=${3?Need a port}
-
-    # docker run -p 127.0.0.1:3000:3000 --name "$CONTAINER" -d "$IMAGE"
-    # --restart=on-failure will force a restart of the container upon the exit signal from nodejs
-    docker run --restart=on-failure -p 127.0.0.1:"$PORT:$PORT" --name "$CONTAINER" -d "$IMAGE"
+docker_run() {
+    local IMAGE=${1?"Error: An image name is required"}
+    local CONTAINER=${2?"Error: A container name is required"}
+    local PORT=${3?"Error: A port number is required"}
+    docker run --restart=on-failure -p "127.0.0.1:$PORT:$PORT" --name "$CONTAINER" -d "$IMAGE"
 }
 
-function docker_update {
+docker_update {
     IMAGE=${1?Need an image name}
     CONTAINER=${2?Need a container name}
     PORT=${3?Need a port}
