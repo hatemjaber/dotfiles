@@ -18,3 +18,4 @@ nvidia
 pop-launcher
 pop-system-updater
 typescript
+flatpak
