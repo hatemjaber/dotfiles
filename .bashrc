@@ -120,7 +120,7 @@ fi
 # * ~/.path can be used to extend `$PATH`.
 # * ~/.extra can be used for other settings you don’t want to commit.
 # path,functions
-for file in ~/.{exports,aliases,functions,extra}; do
+for file in ~/.{exports,path,aliases,functions,extra}; do
 	[ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
 unset file;
