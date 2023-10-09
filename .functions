@@ -22,6 +22,16 @@ tmpd() {
 
 # Compare original and gzipped file size
 gz() {
+    if ! command -v gzip > /dev/null 2>&1; then
+        echo "gzip is missing. Please install it."
+        return 1
+    fi
+
+    if ! command -v bc > /dev/null 2>&1; then
+        echo "bc is missing. Please install it."
+        return 1
+    fi
+    
     local origsize=$(wc -c < "$1")
     local gzipsize=$(gzip -c "$1" | wc -c)
     local ratio=$(echo "$gzipsize * 100 / $origsize" | bc -l)
@@ -38,6 +48,21 @@ change_extension() {
 
 # Create a data URL from a file
 dataurl() {
+    if ! command -v file > /dev/null 2>&1; then
+        echo "file is missing. Please install it."
+        return 1
+    fi
+
+    if ! command -v openssl > /dev/null 2>&1; then
+        echo "openssl is missing. Please install it."
+        return 1
+    fi
+
+    if ! command -v tr > /dev/null 2>&1; then
+        echo "tr is missing. It's typically bundled with core utilities."
+        return 1
+    fi
+    
 	local mimeType
 	mimeType=$(file -b --mime-type "$1")
 	if [[ $mimeType == text/* ]]; then
@@ -48,18 +73,38 @@ dataurl() {
 
 # Start an HTTP server from a directory, optionally specifying the port
 server() {
-	local port="${1:-8000}"
-	sleep 1 && (xdg-open "http://localhost:${port}/" &> /dev/null || open "http://localhost:${port}/" &> /dev/null || start "http://localhost:${port}/") &
-	python3 -m http.server --bind 0.0.0.0 "$port"
+    if ! command -v python3 > /dev/null 2>&1; then
+        echo "python3 is missing. Please install it."
+        return 1
+    fi
+
+    local port="${1:-8000}"
+    sleep 1 && (xdg-open "http://localhost:${port}/" &> /dev/null || open "http://localhost:${port}/" &> /dev/null || start "http://localhost:${port}/") &
+    python3 -m http.server --bind 0.0.0.0 "$port"
 }
 
 # Run `dig` and display the most useful info
 digga() {
+    if ! command -v dig > /dev/null 2>&1; then
+        echo "dig is missing. Please install it."
+        return 1
+    fi
+    
 	dig +nocmd "$1" any +multiline +noall +answer
 }
 
 # check if uri is up
 isup() {
+    if ! command -v curl > /dev/null 2>&1; then
+        echo "curl is missing. Please install it."
+        return 1
+    fi
+
+    if ! command -v notify-send > /dev/null 2>&1; then
+        echo "notify-send is missing. Please install it."
+        return 1
+    fi
+
 	local uri=$1
 
 	if curl -s --head  --request GET "$uri" | grep "200 OK" > /dev/null ; then
@@ -69,42 +114,65 @@ isup() {
 	fi
 }
 
+# pipe command output to clipboard
+toclip() {
+    if ! command -v xclip > /dev/null 2>&1; then
+        echo "xclip is missing. Please install it."
+        return 1
+    fi
+
+   "$@" | xclip -selection clipboard
+}
+
 # -----------------------------
 # Archive Utility Functions
 # -----------------------------
 
-# Create a .tar.gz archive, using `zopfli`, `pigz` or `gzip` for compression
+# Create a .tar.gz archive, using `zopfli`, `pigz`, or `gzip` for compression
 targz() {
-	local tmpFile="${@%/}.tar";
-	tar -cvf "${tmpFile}" --exclude=".DS_Store" "${@}" || return 1;
+    if ! command -v tar > /dev/null 2>&1; then
+        echo "tar is missing. Please install it."
+        return 1
+    fi
 
-	size=$(
-		stat -f"%z" "${tmpFile}" 2> /dev/null; # macOS `stat`
-		stat -c"%s" "${tmpFile}" 2> /dev/null;  # GNU `stat`
-	);
+    if ! command -v stat > /dev/null 2>&1; then
+        echo "stat is missing. Please install it."
+        return 1
+    fi
 
-	local cmd="";
-	if (( size < 52428800 )) && hash zopfli 2> /dev/null; then
-		# the .tar file is smaller than 50 MB and Zopfli is available; use it
-		cmd="zopfli";
-	else
-		if hash pigz 2> /dev/null; then
-			cmd="pigz";
-		else
-			cmd="gzip";
-		fi;
-	fi;
+    local tmpFile="${@%/}.tar"
+    tar -cvf "${tmpFile}" --exclude=".DS_Store" "${@}" || return 1
 
-	echo "Compressing .tar ($((size / 1000)) kB) using \`${cmd}\`…";
-	"${cmd}" -v "${tmpFile}" || return 1;
-	[ -f "${tmpFile}" ] && rm "${tmpFile}";
+    size=$(
+        stat -f"%z" "${tmpFile}" 2> /dev/null || stat -c"%s" "${tmpFile}" 2> /dev/null
+    )
 
-	zippedSize=$(
-		stat -f"%z" "${tmpFile}.gz" 2> /dev/null; # macOS `stat`
-		stat -c"%s" "${tmpFile}.gz" 2> /dev/null; # GNU `stat`
-	);
+    local cmd=""
+    if ((size < 52428800)) && command -v zopfli > /dev/null 2>&1; then
+        # the .tar file is smaller than 50 MB and Zopfli is available; use it
+        cmd="zopfli"
+    else
+        if command -v pigz > /dev/null 2>&1; then
+            cmd="pigz"
+        else
+            cmd="gzip"
+        fi
+    fi
 
-	echo "${tmpFile}.gz ($((zippedSize / 1000)) kB) created successfully.";
+    if ! command -v "${cmd}" > /dev/null 2>&1; then
+        echo "${cmd} is missing. Please install it."
+        return 1
+    fi
+
+    echo "Compressing .tar ($((size / 1000)) kB) using \`${cmd}\`…"
+    "${cmd}" -v "${tmpFile}" || return 1
+    [ -f "${tmpFile}" ] && rm "${tmpFile}"
+
+    zippedSize=$(
+        stat -f"%z" "${tmpFile}.gz" 2> /dev/null || stat -c"%s" "${tmpFile}.gz" 2> /dev/null
+    )
+
+    echo "${tmpFile}.gz ($((zippedSize / 1000)) kB) created successfully."
 }
 
 # -----------------------------
@@ -114,15 +182,21 @@ targz() {
 
 # Determine size of a file or total size of a directory
 fs() {
+    if ! command -v du > /dev/null 2>&1; then
+        echo "du is missing. Please install it."
+        return 1
+    fi
+
     local arg=-sh;
-	if du -b /dev/null > /dev/null 2>&1; then
-		local arg=-sbh;
-	fi
-	if [[ -n "$@" ]]; then
-		du $arg -- "$@";
-	else
-		du $arg .[^.]* ./*;
-	fi;
+    if du --apparent-size -b /dev/null > /dev/null 2>&1; then
+        local arg=-sbh;
+    fi
+
+    if [[ -n "$@" ]]; then
+        du $arg -- "$@"
+    else
+        du $arg .[^.]* ./*
+    fi
 }
 
 # -----------------------------
@@ -154,6 +228,11 @@ fi
 # `o` with no arguments opens the current directory, otherwise opens the given
 # location
 o() {
+    if ! command -v open > /dev/null 2>&1; then
+        echo "open is missing. Please install it."
+        return 1
+    fi
+    
 	if [ $# -eq 0 ]; then
 		open .;
 	else
@@ -173,6 +252,16 @@ v() {
 
 # Get colors in manual pages
 man() {
+    if ! command -v env > /dev/null 2>&1; then
+        echo "env is missing. Please install it."
+        return 1
+    fi
+    
+    if ! command -v man > /dev/null 2>&1; then
+        echo "man is missing. Please install it."
+        return 1
+    fi
+    
 	env \
 		LESS_TERMCAP_mb="$(printf '\e[1;31m')" \
 		LESS_TERMCAP_md="$(printf '\e[1;31m')" \
@@ -186,6 +275,11 @@ man() {
 
 # Use feh to nicely view images
 openimage() {
+    if ! command -v feh > /dev/null 2>&1; then
+        echo "feh is missing. Please install it."
+        return 1
+    fi
+    
 	local types='*.jpg *.JPG *.png *.PNG *.gif *.GIF *.jpeg *.JPEG'
 
 	cd "$(dirname "$1")" || exit
