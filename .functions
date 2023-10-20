@@ -335,3 +335,77 @@ docker_update() {
     # --restart=on-failure will force a restart of the container upon the exit signal from nodejs
     docker run --restart=on-failure -p 127.0.0.1:"$PORT:$PORT" --name "$CONTAINER" -d "$IMAGE"
 }
+
+# Function to increment version
+docker_increment_image_version() {
+  echo "$1" | awk -F. '{$NF = $NF + 1;} 1' OFS=.
+}
+
+# Main function to tag and push Docker images
+docker_tag_and_push() {
+    local repo_url="$1"
+    local dockerfile_path="${2:-./Dockerfile}"  # Default to './Dockerfile'
+    local build_context="${3:-.}"  # Default to current directory '.'
+    # Extract the directory from the Dockerfile path
+    local cur_dir=$(dirname "$dockerfile_path")
+    # Full path to the .version file
+    local version_file_path="$cur_dir/.version"
+
+    # Check if repo_url is empty
+    if [ -z "$repo_url" ]; then
+        echo "Repository URL is missing. Please provide it as an argument."
+        echo "Usage: docker_tag_and_push <repository_url> <dockerfile_path> <build_context>"
+        return 1
+    fi
+
+    # Check for the presence of a Dockerfile
+    if [ ! -f "$dockerfile_path" ]; then
+        echo "Error: No Dockerfile found at $dockerfile_path."
+        return 1
+    fi
+
+    # Check if .version file exists
+    if [ -f "$version_file_path" ]; then
+        LAST_VERSION=$(cat "$version_file_path")
+        VERSION=$(docker_increment_image_version $LAST_VERSION)
+    else
+        echo "Enter the initial version number (e.g., 1.0.0): "
+        read VERSION
+    fi
+
+    echo "Using version: $VERSION. Is this okay? (y/n)"
+    read CONFIRM
+    if [ "$CONFIRM" != "y" ]; then
+        echo "Aborted." >&2
+        return 1
+    fi
+
+    docker build -t $repo_url:$VERSION -f $dockerfile_path $build_context
+    if [ $? -ne 0 ]; then
+        echo "Docker build failed." >&2
+        return 1
+    fi
+
+    docker tag $repo_url:$VERSION $repo_url:latest
+
+    docker push $repo_url:$VERSION
+    if [ $? -ne 0 ]; then
+        echo "Docker push failed for version $VERSION." >&2
+        return 1
+    fi
+
+    docker push $repo_url:latest
+    if [ $? -ne 0 ]; then
+        echo "Docker push failed for latest." >&2
+        return 1
+    fi
+
+    # Create a temporary file with the new version number
+    echo $VERSION > "${version_file_path}.tmp"
+
+    # Atomically move the temporary file to replace the existing .version file
+    mv "${version_file_path}.tmp" "$version_file_path"
+
+    # Output a success message
+    echo "Successfully built and pushed $repo_url:$VERSION and latest."
+}
