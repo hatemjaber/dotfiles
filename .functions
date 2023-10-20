@@ -48,6 +48,7 @@ change_extension() {
 
 # Create a data URL from a file
 dataurl() {
+<<<<<<< Updated upstream
     if ! command -v file > /dev/null 2>&1; then
         echo "file is missing. Please install it."
         return 1
@@ -63,6 +64,8 @@ dataurl() {
         return 1
     fi
     
+=======
+>>>>>>> Stashed changes
 	local mimeType
 	mimeType=$(file -b --mime-type "$1")
 	if [[ $mimeType == text/* ]]; then
@@ -73,6 +76,7 @@ dataurl() {
 
 # Start an HTTP server from a directory, optionally specifying the port
 server() {
+<<<<<<< Updated upstream
     if ! command -v python3 > /dev/null 2>&1; then
         echo "python3 is missing. Please install it."
         return 1
@@ -81,20 +85,29 @@ server() {
     local port="${1:-8000}"
     sleep 1 && (xdg-open "http://localhost:${port}/" &> /dev/null || open "http://localhost:${port}/" &> /dev/null || start "http://localhost:${port}/") &
     python3 -m http.server --bind 0.0.0.0 "$port"
+=======
+	local port="${1:-8000}"
+	sleep 1 && (xdg-open "http://localhost:${port}/" &> /dev/null || open "http://localhost:${port}/" &> /dev/null || start "http://localhost:${port}/") &
+	python3 -m http.server --bind 0.0.0.0 "$port"
+>>>>>>> Stashed changes
 }
 
 # Run `dig` and display the most useful info
 digga() {
+<<<<<<< Updated upstream
     if ! command -v dig > /dev/null 2>&1; then
         echo "dig is missing. Please install it."
         return 1
     fi
     
+=======
+>>>>>>> Stashed changes
 	dig +nocmd "$1" any +multiline +noall +answer
 }
 
 # check if uri is up
 isup() {
+<<<<<<< Updated upstream
     if ! command -v curl > /dev/null 2>&1; then
         echo "curl is missing. Please install it."
         return 1
@@ -105,6 +118,8 @@ isup() {
         return 1
     fi
 
+=======
+>>>>>>> Stashed changes
 	local uri=$1
 
 	if curl -s --head  --request GET "$uri" | grep "200 OK" > /dev/null ; then
@@ -114,6 +129,7 @@ isup() {
 	fi
 }
 
+<<<<<<< Updated upstream
 # pipe command output to clipboard
 toclip() {
     if ! command -v xclip > /dev/null 2>&1; then
@@ -124,6 +140,8 @@ toclip() {
    "$@" | xclip -selection clipboard
 }
 
+=======
+>>>>>>> Stashed changes
 # -----------------------------
 # Archive Utility Functions
 # -----------------------------
@@ -252,6 +270,7 @@ v() {
 
 # Get colors in manual pages
 man() {
+<<<<<<< Updated upstream
     if ! command -v env > /dev/null 2>&1; then
         echo "env is missing. Please install it."
         return 1
@@ -262,6 +281,8 @@ man() {
         return 1
     fi
     
+=======
+>>>>>>> Stashed changes
 	env \
 		LESS_TERMCAP_mb="$(printf '\e[1;31m')" \
 		LESS_TERMCAP_md="$(printf '\e[1;31m')" \
@@ -275,11 +296,14 @@ man() {
 
 # Use feh to nicely view images
 openimage() {
+<<<<<<< Updated upstream
     if ! command -v feh > /dev/null 2>&1; then
         echo "feh is missing. Please install it."
         return 1
     fi
     
+=======
+>>>>>>> Stashed changes
 	local types='*.jpg *.JPG *.png *.PNG *.gif *.GIF *.jpeg *.JPEG'
 
 	cd "$(dirname "$1")" || exit
