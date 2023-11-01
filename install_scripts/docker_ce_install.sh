@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # Update and upgrade system
 apt update
@@ -19,7 +20,7 @@ apt install ca-certificates curl gnupg lsb-release -y
 if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
     mkdir -p /etc/apt/keyrings
     curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-    echo   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
       $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
     apt update
 fi
@@ -34,5 +35,3 @@ fi
 usermod -aG docker $USER
 
 echo "Installation completed!"
-echo "For the group changes to take effect, you might
-
