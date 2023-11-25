@@ -56,6 +56,22 @@ dataurl() {
 	echo "data:${mimeType};base64,$(openssl base64 -in "$1" | tr -d '\n')"
 }
 
+# Copy output to clipboard
+clipx() {
+    if ! command -v xclip &> /dev/null; then
+        echo "xclip is not installed. Please install it."
+        return 1
+    fi
+
+    if [ -p /dev/stdin ]; then
+        # Handle piped input
+        cat - | xclip -selection clipboard
+    else
+        # Handle arguments
+        "$@" | xclip -selection clipboard
+    fi
+}
+
 # Start an HTTP server from a directory, optionally specifying the port
 server() {
 	local port="${1:-8000}"
