@@ -63,11 +63,12 @@ clipx() {
         return 1
     fi
 
-    if [ -p /dev/stdin ]; then
-        # Handle piped input
-        cat - | xclip -selection clipboard
+    # Check if there are arguments
+    if [ $# -eq 0 ]; then
+        # No arguments, assume input is piped
+        xclip -selection clipboard
     else
-        # Handle arguments
+        # Execute the arguments as a command and pipe to xclip
         "$@" | xclip -selection clipboard
     fi
 }
