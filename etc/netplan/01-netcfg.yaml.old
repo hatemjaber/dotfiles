@@ -13,11 +13,8 @@ network:
       interfaces: [enp1s0]
       dhcp4: false
       dhcp6: false
-      addresses: [192.168.1.200/24]
-      routes:
-        - to: default
-          via: 192.168.1.1
-          metric: 100
+      addresses: [192.168.1.200/24]  # Static IP for the bridge
+      gateway4: 192.168.1.1
       nameservers:
         addresses: [8.8.8.8]
       parameters:
