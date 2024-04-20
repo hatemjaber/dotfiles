@@ -366,3 +366,35 @@ docker_tag_and_push() {
     # Output a success message
     echo "Successfully built and pushed $repo_url:$VERSION and latest."
 }
+
+# -----------------------------
+# Git Utility Functions
+# -----------------------------
+
+# Function to reset and configure all Git repositories in a specified directory
+reset_git_repos() {
+    local parent_dir="$1"  # The first argument to the function is the directory containing Git repos
+
+    # Check if the directory is provided and exists
+    if [[ -z "$parent_dir" || ! -d "$parent_dir" ]]; then
+        echo "Usage: reset_git_repos <directory>"
+        return 1
+    fi
+
+    # Loop through each subdirectory in the parent directory
+    for d in "$parent_dir"/*; do
+        if [ -d "$d" ]; then  # Check if it's a directory
+            pushd "$d" > /dev/null  # Change to the directory
+            if [ -d .git ]; then  # Check if it's a Git repository
+                echo "Resetting in $(basename "$d")"
+                git reset --hard  # Reset the repository
+                git config core.fileMode false  # Ignore file mode changes
+                # Add additional Git configuration commands here if needed
+            else
+                echo "$(basename "$d") is not a Git repository"
+            fi
+            popd > /dev/null  # Return to the parent directory
+        fi
+    done
+}
+
