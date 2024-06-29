@@ -125,8 +125,8 @@ for file in ~/.{exports,path,aliases,functions,extra}; do
 done;
 unset file;
 
-# Logging every command
-PROMPT_COMMAND="${PROMPT_COMMAND:+$PROMPT_COMMAND ; }"'echo $$ $USER "$(history 1)" >> ~/.bash_eternal_history'
+# Append to eternal history with a check for duplicates
+PROMPT_COMMAND='history -a; history -n; echo $$ $USER "$(history 1)" >> ~/.bash_eternal_history'
 
 export NVM_DIR="$HOME/bin/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
