@@ -127,15 +127,3 @@ unset file;
 
 # Append to eternal history with a check for duplicates
 PROMPT_COMMAND='history -a; history -n; echo $$ $USER "$(history 1)" >> ~/.bash_eternal_history'
-
-export NVM_DIR="$HOME/bin/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-
-# pnpm
-export PNPM_HOME="/home/hatem/.local/share/pnpm"
-case ":$PATH:" in
-  *":$PNPM_HOME:"*) ;;
-  *) export PATH="$PNPM_HOME:$PATH" ;;
-esac
-# pnpm end
