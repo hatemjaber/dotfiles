@@ -127,3 +127,5 @@ unset file;
 
 # Append to eternal history with a check for duplicates
 PROMPT_COMMAND='history -a; history -n; echo $$ $USER "$(history 1)" >> ~/.bash_eternal_history'
+
+. /etc/profile.d/vte-2.91.sh 
