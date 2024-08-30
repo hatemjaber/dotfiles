@@ -116,6 +116,11 @@ if ! shopt -oq posix; then
   fi
 fi
 
+# Append to eternal history with a check for duplicates
+PROMPT_COMMAND='history -a; history -n; echo $$ $USER "$(history 1)" >> ~/.bash_eternal_history'
+
+. /etc/profile.d/vte-2.91.sh 
+
 # Load the shell dotfiles, and then some:
 # * ~/.path can be used to extend `$PATH`.
 # * ~/.extra can be used for other settings you don’t want to commit.
@@ -124,8 +129,3 @@ for file in ~/.{exports,path,aliases,functions,extra}; do
 	[ -r "$file" ] && [ -f "$file" ] && source "$file";
 done;
 unset file;
-
-# Append to eternal history with a check for duplicates
-PROMPT_COMMAND='history -a; history -n; echo $$ $USER "$(history 1)" >> ~/.bash_eternal_history'
-
-. /etc/profile.d/vte-2.91.sh 
