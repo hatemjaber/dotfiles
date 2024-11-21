@@ -1,0 +1,21 @@
+bin
+Calibre Library
+go
+ISOs
+Videos
+vms
+node_modules
+google-chrome
+google-chrome-beta
+google-chrome-unstable
+chromium
+microsoft-edge
+microsoft-edge-dev
+Microsoft
+Code
+puppeteer
+nvidia
+pop-launcher
+pop-system-updater
+typescript
+flatpak

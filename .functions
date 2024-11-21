@@ -1,0 +1,400 @@
+#!/usr/bin/env bash
+
+# -----------------------------
+# General Utility Functions
+# -----------------------------
+
+# Create a new directory and enter it
+mkd() {
+	mkdir -p "$@" && cd "$_";
+}
+
+# Make a temporary directory and enter it
+tmpd() {
+	local dir
+	if [ $# -eq 0 ]; then
+		dir=$(mktemp -d)
+	else
+		dir=$(mktemp -d -t "${1}.XXXXXXXXXX")
+	fi
+	cd "$dir" || exit
+}
+
+# Compare original and gzipped file size
+gz() {
+    if ! command -v gzip > /dev/null 2>&1; then
+        echo "gzip is missing. Please install it."
+        return 1
+    fi
+
+    if ! command -v bc > /dev/null 2>&1; then
+        echo "bc is missing. Please install it."
+        return 1
+    fi
+    
+    local origsize=$(wc -c < "$1")
+    local gzipsize=$(gzip -c "$1" | wc -c)
+    local ratio=$(echo "$gzipsize * 100 / $origsize" | bc -l)
+    printf "orig: %d bytes\n" "$origsize"
+    printf "gzip: %d bytes (%2.2f%%)\n" "$gzipsize" "$ratio"
+}
+
+# Change file extensions
+change_extension() {
+    for f in *.$1; do
+        [ -f "$f" ] && mv -v "$f" "${f%$1}$2"
+    done
+}
+
+# Create a data URL from a file
+dataurl() {
+	local mimeType
+	mimeType=$(file -b --mime-type "$1")
+	if [[ $mimeType == text/* ]]; then
+		mimeType="${mimeType};charset=utf-8"
+	fi
+	echo "data:${mimeType};base64,$(openssl base64 -in "$1" | tr -d '\n')"
+}
+
+# Copy output to clipboard
+clipx() {
+    if ! command -v xclip &> /dev/null; then
+        echo "xclip is not installed. Please install it."
+        return 1
+    fi
+
+    # Check if there are arguments
+    if [ $# -eq 0 ]; then
+        # No arguments, assume input is piped
+        xclip -selection clipboard
+    else
+        # Execute the arguments as a command and pipe to xclip
+        "$@" | xclip -selection clipboard
+    fi
+}
+
+# Start an HTTP server from a directory, optionally specifying the port
+server() {
+	local port="${1:-8000}"
+	sleep 1 && (xdg-open "http://localhost:${port}/" &> /dev/null || open "http://localhost:${port}/" &> /dev/null || start "http://localhost:${port}/") &
+	python3 -m http.server --bind 0.0.0.0 "$port"
+}
+
+# Run `dig` and display the most useful info
+digga() {
+	dig +nocmd "$1" any +multiline +noall +answer
+}
+
+# check if uri is up
+isup() {
+	local uri=$1
+
+	if curl -s --head  --request GET "$uri" | grep "200 OK" > /dev/null ; then
+		notify-send --urgency=critical "$uri is down"
+	else
+		notify-send --urgency=low "$uri is up"
+	fi
+}
+
+# -----------------------------
+# Archive Utility Functions
+# -----------------------------
+
+# Create a .tar.gz archive, using `zopfli`, `pigz`, or `gzip` for compression
+targz() {
+    if ! command -v tar > /dev/null 2>&1; then
+        echo "tar is missing. Please install it."
+        return 1
+    fi
+
+    if ! command -v stat > /dev/null 2>&1; then
+        echo "stat is missing. Please install it."
+        return 1
+    fi
+
+    local tmpFile="${@%/}.tar"
+    tar -cvf "${tmpFile}" --exclude=".DS_Store" "${@}" || return 1
+
+    size=$(
+        stat -f"%z" "${tmpFile}" 2> /dev/null || stat -c"%s" "${tmpFile}" 2> /dev/null
+    )
+
+    local cmd=""
+    if ((size < 52428800)) && command -v zopfli > /dev/null 2>&1; then
+        # the .tar file is smaller than 50 MB and Zopfli is available; use it
+        cmd="zopfli"
+    else
+        if command -v pigz > /dev/null 2>&1; then
+            cmd="pigz"
+        else
+            cmd="gzip"
+        fi
+    fi
+
+    if ! command -v "${cmd}" > /dev/null 2>&1; then
+        echo "${cmd} is missing. Please install it."
+        return 1
+    fi
+
+    echo "Compressing .tar ($((size / 1000)) kB) using \`${cmd}\`…"
+    "${cmd}" -v "${tmpFile}" || return 1
+    [ -f "${tmpFile}" ] && rm "${tmpFile}"
+
+    zippedSize=$(
+        stat -f"%z" "${tmpFile}.gz" 2> /dev/null || stat -c"%s" "${tmpFile}.gz" 2> /dev/null
+    )
+
+    echo "${tmpFile}.gz ($((zippedSize / 1000)) kB) created successfully."
+}
+
+# -----------------------------
+# File System Utility Functions
+# -----------------------------
+
+
+# Determine size of a file or total size of a directory
+fs() {
+    if ! command -v du > /dev/null 2>&1; then
+        echo "du is missing. Please install it."
+        return 1
+    fi
+
+    local arg=-sh;
+    if du --apparent-size -b /dev/null > /dev/null 2>&1; then
+        local arg=-sbh;
+    fi
+
+    if [[ -n "$@" ]]; then
+        du $arg -- "$@"
+    else
+        du $arg .[^.]* ./*
+    fi
+}
+
+# -----------------------------
+# Git Utility Functions
+# -----------------------------
+
+if hash git &>/dev/null; then
+    # Use Git’s colored diff when available
+    diff() {
+        git diff --no-index --color-words "$@"
+    }
+fi
+
+# -----------------------------
+# Open Function (Cross-platform)
+# -----------------------------
+
+# Normalize `open` across Linux, macOS, and Windows.
+# This is needed to make the `o` (see below) cross-platform.
+if [ ! $(uname -s) = 'Darwin' ]; then
+	if grep -q Microsoft /proc/version; then
+		# Ubuntu on Windows using the Linux subsystem
+		alias open='explorer.exe';
+	else
+		alias open='xdg-open';
+	fi
+fi
+
+# `o` with no arguments opens the current directory, otherwise opens the given
+# location
+o() {
+    if ! command -v open > /dev/null 2>&1; then
+        echo "open is missing. Please install it."
+        return 1
+    fi
+    
+	if [ $# -eq 0 ]; then
+		open .;
+	else
+		open "$@";
+	fi;
+}
+
+# `v` with no arguments opens the current directory in Vim, otherwise opens the
+# given location
+v() {
+	if [ $# -eq 0 ]; then
+		vim .
+	else
+		vim "$@"
+	fi
+}
+
+# Get colors in manual pages
+man() {
+	env \
+		LESS_TERMCAP_mb="$(printf '\e[1;31m')" \
+		LESS_TERMCAP_md="$(printf '\e[1;31m')" \
+		LESS_TERMCAP_me="$(printf '\e[0m')" \
+		LESS_TERMCAP_se="$(printf '\e[0m')" \
+		LESS_TERMCAP_so="$(printf '\e[1;44;33m')" \
+		LESS_TERMCAP_ue="$(printf '\e[0m')" \
+		LESS_TERMCAP_us="$(printf '\e[1;32m')" \
+		man "$@"
+}
+
+# Use feh to nicely view images
+openimage() {
+	local types='*.jpg *.JPG *.png *.PNG *.gif *.GIF *.jpeg *.JPEG'
+
+	cd "$(dirname "$1")" || exit
+	local file
+	file=$(basename "$1")
+
+	feh -q "$types" --auto-zoom \
+		--sort filename --borderless \
+		--scale-down --draw-filename \
+		--image-bg black \
+		--start-at "$file"
+}
+
+# -----------------------------
+# Docker Utility Functions
+# -----------------------------
+
+docker_stop_containers() {
+    docker stop $(docker ps -a -q) 2>/dev/null
+}
+
+docker_rm_containers() {
+    docker rm -f -v $(docker ps -a -q) 2>/dev/null
+}
+
+docker_rmi_images() {
+    docker rmi -f $(docker images -q) 2>/dev/null
+}
+
+docker_build() {
+    local TAG=${1?"Error: A tag value is required"}
+    local IMAGE=${2?"Error: An image name is required"}
+    docker build -t "$IMAGE:$TAG" -t "$IMAGE:latest" .
+}
+
+docker_run() {
+    local IMAGE=${1?"Error: An image name is required"}
+    local CONTAINER=${2?"Error: A container name is required"}
+    local PORT=${3?"Error: A port number is required"}
+    docker run --restart=on-failure -p "127.0.0.1:$PORT:$PORT" --name "$CONTAINER" -d "$IMAGE"
+}
+
+docker_update() {
+    IMAGE=${1?Need an image name}
+    CONTAINER=${2?Need a container name}
+    PORT=${3?Need a port}
+
+
+    docker stop $CONTAINER
+    docker rm $CONTAINER
+
+    # docker run -p 127.0.0.1:3000:3000 --name "$CONTAINER" -d "$IMAGE"
+    # --restart=on-failure will force a restart of the container upon the exit signal from nodejs
+    docker run --restart=on-failure -p 127.0.0.1:"$PORT:$PORT" --name "$CONTAINER" -d "$IMAGE"
+}
+
+# Function to increment version
+docker_increment_image_version() {
+  echo "$1" | awk -F. '{$NF = $NF + 1;} 1' OFS=.
+}
+
+# Main function to tag and push Docker images
+docker_tag_and_push() {
+    local repo_url="$1"
+    local dockerfile_path="${2:-./Dockerfile}"  # Default to './Dockerfile'
+    local build_context="${3:-.}"  # Default to current directory '.'
+    # Extract the directory from the Dockerfile path
+    local cur_dir=$(dirname "$dockerfile_path")
+    # Full path to the .version file
+    local version_file_path="$cur_dir/.version"
+
+    # Check if repo_url is empty
+    if [ -z "$repo_url" ]; then
+        echo "Repository URL is missing. Please provide it as an argument."
+        echo "Usage: docker_tag_and_push <repository_url> <dockerfile_path> <build_context>"
+        return 1
+    fi
+
+    # Check for the presence of a Dockerfile
+    if [ ! -f "$dockerfile_path" ]; then
+        echo "Error: No Dockerfile found at $dockerfile_path."
+        return 1
+    fi
+
+    # Check if .version file exists
+    if [ -f "$version_file_path" ]; then
+        LAST_VERSION=$(cat "$version_file_path")
+        VERSION=$(docker_increment_image_version $LAST_VERSION)
+    else
+        echo "Enter the initial version number (e.g., 1.0.0): "
+        read VERSION
+    fi
+
+    echo "Using version: $VERSION. Is this okay? (y/n)"
+    read CONFIRM
+    if [ "$CONFIRM" != "y" ]; then
+        echo "Aborted." >&2
+        return 1
+    fi
+
+    docker build -t $repo_url:$VERSION -f $dockerfile_path $build_context
+    if [ $? -ne 0 ]; then
+        echo "Docker build failed." >&2
+        return 1
+    fi
+
+    docker tag $repo_url:$VERSION $repo_url:latest
+
+    docker push $repo_url:$VERSION
+    if [ $? -ne 0 ]; then
+        echo "Docker push failed for version $VERSION." >&2
+        return 1
+    fi
+
+    docker push $repo_url:latest
+    if [ $? -ne 0 ]; then
+        echo "Docker push failed for latest." >&2
+        return 1
+    fi
+
+    # Create a temporary file with the new version number
+    echo $VERSION > "${version_file_path}.tmp"
+
+    # Atomically move the temporary file to replace the existing .version file
+    mv "${version_file_path}.tmp" "$version_file_path"
+
+    # Output a success message
+    echo "Successfully built and pushed $repo_url:$VERSION and latest."
+}
+
+# -----------------------------
+# Git Utility Functions
+# -----------------------------
+
+# Function to reset and configure all Git repositories in a specified directory
+reset_git_repos() {
+    local parent_dir="$1"  # The first argument to the function is the directory containing Git repos
+
+    # Check if the directory is provided and exists
+    if [[ -z "$parent_dir" || ! -d "$parent_dir" ]]; then
+        echo "Usage: reset_git_repos <directory>"
+        return 1
+    fi
+
+    # Loop through each subdirectory in the parent directory
+    for d in "$parent_dir"/*; do
+        if [ -d "$d" ]; then  # Check if it's a directory
+            pushd "$d" > /dev/null  # Change to the directory
+            if [ -d .git ]; then  # Check if it's a Git repository
+                echo "Resetting in $(basename "$d")"
+                git reset --hard  # Reset the repository
+                git config core.fileMode false  # Ignore file mode changes
+                # Add additional Git configuration commands here if needed
+            else
+                echo "$(basename "$d") is not a Git repository"
+            fi
+            popd > /dev/null  # Return to the parent directory
+        fi
+    done
+}
+

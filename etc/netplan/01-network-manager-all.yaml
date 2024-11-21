@@ -1,0 +1,17 @@
+network:
+  version: 2
+  renderer: NetworkManager
+  ethernets:
+    enp1s0:  # Replace with the name of your physical Ethernet interface
+      dhcp4: no
+      dhcp6: no
+  bridges:
+    br0:  # You can choose a name for the bridge (e.g., br0)
+      dhcp4: yes
+      dhcp6: no
+      parameters:
+        stp: false
+        forward-delay: 0
+      interfaces:
+        - enp1s0  # Connect the bridge to your physical interface
+

@@ -1,0 +1,24 @@
+network:
+  version: 2
+  renderer: networkd
+
+  ethernets:
+    enp1s0:
+      dhcp4: true
+      dhcp6: true
+      optional: true
+
+  bridges:
+    br0:
+      interfaces: [enp1s0]
+      dhcp4: false
+      dhcp6: false
+      addresses: [192.168.1.200/24]  # Static IP for the bridge
+      gateway4: 192.168.1.1
+      nameservers:
+        addresses: [8.8.8.8]
+      parameters:
+        stp: true
+        forward-delay: 4
+
+

@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+eval "$(/opt/homebrew/bin/brew shellenv)"
+
+# Hide the “default interactive shell is now zsh” warning on macOS.
+export BASH_SILENCE_DEPRECATION_WARNING=1;
+
+export NVM_DIR="$HOME/.nvm"
+  [ -s "/opt/homebrew/opt/nvm/nvm.sh" ] && \. "/opt/homebrew/opt/nvm/nvm.sh"  # This loads nvm
+  [ -s "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm" ] && \. "/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+
+# pnpm
+export PNPM_HOME="/Users/hatem/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME:"*) ;;
+  *) export PATH="$PNPM_HOME:$PATH" ;;
+esac
+# pnpm end
+
+# add rbenv to path
+export PATH="$HOME/.rbenv/bin:$PATH"
+eval "$(rbenv init -)"

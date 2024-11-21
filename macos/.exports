@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+source ~/dotfiles/.exports
+
+# Make vim the default editor.
+export EDITOR='vim';
+
+# Hide the “default interactive shell is now zsh” warning on macOS.
+export BASH_SILENCE_DEPRECATION_WARNING=1;

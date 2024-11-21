@@ -1,0 +1,28 @@
+network:
+  version: 2
+  renderer: networkd
+
+  ethernets:
+    enp1s0:
+      dhcp4: true
+      dhcp6: true
+
+  bridges:
+    br0:
+      interfaces: [enp1s0]
+      addresses: [192.168.1.200/24]
+      routes:
+      - to: default
+        via: 192.168.1.1
+        metric: 100
+        on-link: true
+      mtu: 1500
+      nameservers:
+        addresses: [8.8.8.8]
+      parameters:
+        stp: true
+        forward-delay: 4
+      dhcp4: no
+      dhcp6: no
+
+
