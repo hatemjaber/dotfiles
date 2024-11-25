@@ -96,6 +96,73 @@ isup() {
 	fi
 }
 
+# Universal image format conversion function
+convert_image_format() {
+    # Usage instructions
+    local usage="Usage: convert_image_format <directory> <source_extension> <target_extension> [prefix]"
+
+    # Check if the correct number of arguments is provided
+    if [ "$#" -lt 3 ] || [ "$#" -gt 4 ]; then
+        echo "$usage"
+        return 1
+    fi
+
+    # Assign arguments to variables
+    local directory="$1"
+    local source_ext="$2"
+    local target_ext="$3"
+    local prefix="${4:-}"
+
+    # Ensure the directory exists
+    if [ ! -d "$directory" ]; then
+        echo "Error: Directory '$directory' does not exist."
+        return 1
+    fi
+
+    # Check if ImageMagick's convert command is installed
+    if ! command -v convert &>/dev/null; then
+        echo "Error: ImageMagick is not installed. Please install it."
+        return 1
+    fi
+
+    # Initialize a counter for renaming if prefix is provided
+    local counter=1
+
+    # Loop through all files with the source extension in the directory
+    for source_file in "$directory"/*."$source_ext"; do
+        # Check if there are any files with the source extension
+        if [ ! -e "$source_file" ]; then
+            echo "No .$source_ext files found in '$directory'."
+            return 1
+        fi
+
+        # Determine the output file name
+        local base_name
+        if [ -n "$prefix" ]; then
+            # Use the prefix and counter
+            base_name="${prefix}${counter}"
+            ((counter++))
+        else
+            # Use the original file name without the extension
+            base_name=$(basename "$source_file" ."$source_ext")
+        fi
+        local output_file="$directory/${base_name}.${target_ext}"
+
+        # Convert the file
+        convert "$source_file" "$output_file"
+
+        # Check if conversion was successful
+        if [ $? -eq 0 ]; then
+            echo "Converted $source_file to $output_file"
+        else
+            echo "Failed to convert $source_file"
+        fi
+    done
+
+    echo "Conversion complete. Processed $((counter - 1)) files."
+    return 0
+}
+
 # -----------------------------
 # Archive Utility Functions
 # -----------------------------
