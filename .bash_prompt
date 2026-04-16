@@ -1,0 +1,127 @@
+#!/usr/bin/env bash
+
+# Prompt colors / terminfo setup
+# Prefer Ghostty's own terminfo when available, otherwise use xterm-256color.
+if [[ "$TERM" = "xterm-ghostty" ]]; then
+    if infocmp xterm-ghostty >/dev/null 2>&1; then
+        :
+    elif infocmp xterm-256color >/dev/null 2>&1; then
+        export TERM='xterm-256color'
+    fi
+elif infocmp xterm-256color >/dev/null 2>&1; then
+    case "$TERM" in
+        xterm*|screen*|tmux*|rxvt*|ghostty*)
+            export TERM='xterm-256color'
+            ;;
+    esac
+fi
+
+prompt_git() {
+    local s=''
+    local branchName=''
+    local repoUrl=''
+
+    git rev-parse --is-inside-work-tree &>/dev/null || return
+
+    branchName="$(
+        git symbolic-ref --quiet --short HEAD 2>/dev/null || \
+        git describe --all --exact-match HEAD 2>/dev/null || \
+        git rev-parse --short HEAD 2>/dev/null || \
+        echo '(unknown)'
+    )"
+
+    repoUrl="$(git config --get remote.origin.url 2>/dev/null || true)"
+    if grep -q 'chromium/src.git' <<< "${repoUrl}"; then
+        s+='*'
+    else
+        if ! git diff --quiet --ignore-submodules --cached; then
+            s+='+'
+        fi
+        if ! git diff-files --quiet --ignore-submodules --; then
+            s+='!'
+        fi
+        if [ -n "$(git ls-files --others --exclude-standard 2>/dev/null)" ]; then
+            s+='?'
+        fi
+        if git rev-parse --verify refs/stash &>/dev/null; then
+            s+='$'
+        fi
+    fi
+
+    [ -n "${s}" ] && s=" [${s}]"
+
+    echo -e "${1}${branchName}${2}${s}"
+}
+
+if tput setaf 1 >/dev/null 2>&1; then
+    tput sgr0
+    bold="$(tput bold)"
+    reset="$(tput sgr0)"
+
+    black="$(tput setaf 0)"
+    red="$(tput setaf 1)"
+    green="$(tput setaf 2)"
+    yellow="$(tput setaf 3)"
+    blue="$(tput setaf 4)"
+    magenta="$(tput setaf 5)"
+    cyan="$(tput setaf 6)"
+    white="$(tput setaf 7)"
+
+    # extras
+    orange="$yellow"
+    violet="$magenta"
+    purple="$magenta"
+else
+    bold=''
+    reset='\[\e[0m\]'
+    black='\[\e[0;30m\]'
+    red='\[\e[0;31m\]'
+    green='\[\e[0;32m\]'
+    yellow='\[\e[0;33m\]'
+    blue='\[\e[0;34m\]'
+    magenta='\[\e[0;35m\]'
+    cyan='\[\e[0;36m\]'
+    white='\[\e[0;37m\]'
+
+    orange="$yellow"
+    violet="$magenta"
+    purple="$magenta"
+fi
+
+# Highlight the user name when logged in as root
+if [[ "${USER}" == "root" ]]; then
+    userStyle="${bold}${red}"
+else
+    userStyle="${orange}"
+fi
+
+# Highlight the hostname when connected via SSH
+if [[ -n "${SSH_TTY}" ]]; then
+    hostStyle="${bold}${red}"
+else
+    hostStyle="${yellow}"
+fi
+
+# Set terminal title for xterm-like terminals
+case "$TERM" in
+    xterm*|rxvt*|screen*|tmux*|ghostty*|xterm-ghostty)
+        PS1="\[\e]0;\u@\h: \w\a\]"
+        ;;
+    *)
+        PS1=""
+        ;;
+esac
+
+PS1+="\[${bold}\]\n"
+PS1+="\[${userStyle}\]\u"
+PS1+="\[${white}\] at "
+PS1+="\[${hostStyle}\]\h"
+PS1+="\[${white}\] in "
+PS1+="\[${green}\]\w"
+PS1+="\$(prompt_git \"\[${white}\] on \[${violet}\]\" \"\[${blue}\]\")"
+PS1+="\n"
+PS1+="\[${white}\]\\$ \[${reset}\]"
+
+export PS1
+PS2="\[${yellow}\]→ \[${reset}\]"
+export PS2
