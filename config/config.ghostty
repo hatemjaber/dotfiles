@@ -1,0 +1,83 @@
+# --------------------------------------------------
+# Ghostty - dark blue, readable, a little glass
+# --------------------------------------------------
+
+# aesthetics
+background = #0b1220
+foreground = #d8e1f0
+background-opacity = 0.92
+background-opacity-cells = true
+background-blur = 18
+alpha-blending = native
+
+# selection / cursor
+selection-background = #24405f
+selection-foreground = #eef4ff
+cursor-color = #8ec5ff
+cursor-text = #0b1220
+cursor-style = block
+cursor-style-blink = false
+
+# padding / layout polish
+window-padding-x = 8
+window-padding-y = 6
+window-padding-balance = true
+window-padding-color = background
+unfocused-split-opacity = 0.97
+
+# macOS
+macos-titlebar-style = hidden
+
+# typography
+font-size = 12
+font-thicken = true
+font-thicken-strength = 1
+adjust-cell-height = 1
+
+# shell integration niceties
+shell-integration = detect
+
+# --------------------------------------------------
+# palette
+# tuned for legibility with git, ls, editors, etc.
+# --------------------------------------------------
+
+# normal
+palette = 0=#101826
+palette = 1=#ff7b72
+palette = 2=#7ee787
+palette = 3=#e3b341
+palette = 4=#79c0ff
+palette = 5=#d2a8ff
+palette = 6=#78dce8
+palette = 7=#c9d1d9
+
+# bright
+palette = 8=#4b5568
+palette = 9=#ffa198
+palette = 10=#56d364
+palette = 11=#f2cc60
+palette = 12=#a5d6ff
+palette = 13=#e2c5ff
+palette = 14=#a5f3fc
+palette = 15=#f0f6fc
+
+# --------------------------------------------------
+# splits
+# ctrl+super+r => split right
+# ctrl+super+b => split down (bottom)
+# --------------------------------------------------
+
+keybind = ctrl+super+r=new_split:right
+keybind = ctrl+super+b=new_split:down
+
+# a few useful extras for split navigation
+keybind = ctrl+super+h=goto_split:left
+keybind = ctrl+super+j=goto_split:down
+keybind = ctrl+super+k=goto_split:up
+keybind = ctrl+super+l=goto_split:right
+keybind = ctrl+super+e=equalize_splits
+keybind = ctrl+super+enter=toggle_split_zoom
+
+# config reload
+keybind = ctrl+super+comma=reload_config
