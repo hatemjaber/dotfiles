@@ -17,10 +17,10 @@ alias g="git"
 
 # docker aliases
 alias dc_list_all="docker ps -a -q"
-alias dc_stop_all="docker stop $(docker ps -a -q)"
-alias dc_rm_all="docker rm $(docker ps -a -q)"
+alias dc_stop_all='docker stop $(docker ps -a -q)'
+alias dc_rm_all='docker rm $(docker ps -a -q)'
 alias di_list_all="docker images -q"
-alias di_rmi_all="docker rmi $(docker images -q)"
+alias di_rmi_all='docker rmi $(docker images -q)'
 
 # alias python3 to python for programs that need it
 alias python=python3
